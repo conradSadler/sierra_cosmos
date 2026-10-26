@@ -1,4 +1,4 @@
-nclude <stdint.h>
+#include <stdint.h>
 
 #define SYNC_PATTERN 0xABCD1234
 
