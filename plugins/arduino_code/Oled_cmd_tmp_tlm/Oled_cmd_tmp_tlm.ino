@@ -1,6 +1,21 @@
 #include "Arduino_SensorKit.h"
 #define Environment Environment_I2C
 #define SYNC_PATTERN 0xABCD1234;
+#include <SPI.h>
+#include <Ethernet.h>
+int count = 0;
+byte mac[] = {
+  0xAC, 0x00, 0xF9, 0x05, 0x48, 0x7B
+};
+// Local area network: 192.168.0
+// subnet255.255.255.0
+IPAddress ip(169, 254, 240, 36);
+IPAddress gateway(192, 168, 0, 1);
+// class c address
+IPAddress subnet(255, 255, 255, 0);
+
+// telnet defaults to port 23
+EthernetServer server(239);
 
 const uint8_t BMP280_ID = 1;
 
@@ -15,19 +30,37 @@ void setup() {
   Oled.begin();
   Oled.setFlipMode(true);
   Environment.begin();
+  Ethernet.init(10);
   Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+  Ethernet.begin(mac, ip, gateway, subnet);
+
+  Serial.print("My IP address: ");
+  Serial.println(Ethernet.localIP());
+
+  server.begin();
 }
 
 void receiveCommands() 
 {
-  while (Serial.available() > 0){
-    String command = Serial.readString();
-    Oled.clearDisplay();
-    
-    Oled.setFont(u8x8_font_chroma48medium8_r);
-    Oled.setCursor(0, 33);
-    Oled.print(command);
-    Oled.refreshDisplay(); //must update display after writing to it
+  EthernetClient client = server.available();
+  if (client){
+    char command = client.read();
+    if(command == '~')
+    {
+      Oled.clearDisplay();
+      count=0;
+    }
+    else
+    {
+      Oled.setFont(u8x8_font_chroma48medium8_r);
+      Oled.setCursor(count, 33);
+      count++;
+      Oled.print(command);
+      Oled.refreshDisplay(); //must update display after writing to it
+    }
   }
 }
 
@@ -45,12 +78,12 @@ void tlm()
   // Set the number which will define data length
   buffer[sizeof(sync)] = length;
   memcpy(buffer+sizeof(sync) + 1, &data, sizeof(Payload));
-  Serial.write(buffer,PAYLOAD_LEN);
+  server.write(buffer,PAYLOAD_LEN);
 }
 
 void loop() {
   receiveCommands();
   tlm();
-  delay(1000);
-
 }
+
+
