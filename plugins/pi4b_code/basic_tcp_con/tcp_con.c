@@ -68,14 +68,15 @@ uint8_t sendTelemetry(uint32_t client_fd){
         perror("Couldn't get file!");
         return -1;
     }
-    n = fscanf(fp, "%x", &cpu_temp);
+    n = fscanf(fp, "%d", &cpu_temp);
     if(n <= 0){
         perror("Reading File Error");
         return -1;
     }
     fclose(fp);
+    // printf("%x", cpu_temp);
 
-    payload_t data = {RPI4B_ID, cpu_temp};
+    payload_t data = {RPI4B_ID, __builtin_bswap32(cpu_temp)};
     uint32_t PAYLOAD_LEN = sizeof(uint32_t) + 1 + sizeof(payload_t);
     uint8_t buffer[PAYLOAD_LEN];
 
