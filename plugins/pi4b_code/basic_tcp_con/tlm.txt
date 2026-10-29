@@ -1,0 +1,4 @@
+TELEMETRY RPI4B STATUS BIG_ENDIAN "Telemetry description"
+  # Keyword      Name  BitSize Type   ID Description
+  APPEND_ID_ITEM ID    8      INT    1  "Identifier"
+  APPEND_ITEM    TEMP_mC 32      INT     "CPU Temperature"
