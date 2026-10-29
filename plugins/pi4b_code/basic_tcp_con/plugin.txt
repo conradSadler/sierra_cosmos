@@ -1,0 +1,9 @@
+# set VARIABLEs here to allow variation in your plugin
+
+VARIABLE rpi4b_target_name RPI4B
+
+TARGET RPI4B <%= rpi4b_target_name %>
+
+INTERFACE <%= rpi4b_target_name %>_INT tcpip_client_interface.rb 192.168.84.2 8080 8080 10.0 nil
+  MAP_TARGET <%= rpi4b_target_name %>
+  PROTOCOL READ LengthProtocol 32 8 5 1 LITTLE_ENDIAN 5 0x3412CDAB nil false
