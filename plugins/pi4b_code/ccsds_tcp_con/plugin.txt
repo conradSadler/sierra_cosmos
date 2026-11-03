@@ -9,5 +9,5 @@ TARGET RPI4B <%= rpi4b_target_name %>
 
 INTERFACE <%= rpi4b_target_name %> tcpip_client_interface.rb <%= RPI4B_IP_ADDRESS %> <%= RPI4B_WRITE_PORT %> <%= RPI4B_READ_PORT %> 10.0 nil
   MAP_TARGET <%= rpi4b_target_name %>
-  PROTOCOL READ LengthProtocol 32 16 7 1 LITTLE_ENDIAN 0 nil nil True
+  PROTOCOL READ LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil nil True
 
