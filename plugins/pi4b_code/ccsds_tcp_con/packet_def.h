@@ -7,5 +7,5 @@ typedef struct __attribute__((packed)) {
     uint16_t packet_id;   // version(3) | type(1) | sec hdr flag(1) | APID(11)
     uint16_t seq_ctrl;    // seq flags(2) | seq count(14)
     uint16_t length;      // data field bytes - 1
-    int32_t  cpu_temp;    // millidegrees C
+    uint32_t  cpu_temp;    // millidegrees C
 } payload_t;
