@@ -70,7 +70,6 @@ int send_telemetry(int client_fd){
         perror("Couldn't get file!");
         return -1;
     }
-    fp, "%" SCNu32, &val
     int items_matched = fscanf(fp, "%" SCNu32, &cpu_temp);
     fclose(fp);
     if(items_matched != 1){
@@ -87,9 +86,14 @@ int send_telemetry(int client_fd){
         .length = htons(sizeof(int32_t) - 1),
         .cpu_temp = htonl(cpu_temp),
     };
-
-    if(send(client_fd, &packet, sizeof(packet), MSG_NOSIGNAL) < 0){
-        perror("Sending bytes error!");
+    ssize_t bytes_sent = send(client_fd, &packet, sizeof(packet), MSG_NOSIGNAL);
+    if(bytes_sent != (ssize_t)sizeof(packet)){
+        if(bytes_sent < 0){
+            perror("Error sending bytes!");
+        }
+        else{
+            fprintf(stderr, "Error sending bytes: short write\n");
+        }
         return -1;
     }
     return 0;
