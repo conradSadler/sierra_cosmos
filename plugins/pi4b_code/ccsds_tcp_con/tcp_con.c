@@ -77,15 +77,15 @@ int send_telemetry(int client_fd){
         return -1;
     }
     printf("%x", cpu_temp);
-    // htons converts a short(2-byte) integer from local host order to network byte order
-    // (0x3 << 14) shift 11 for unsegmented to the first 2 bits of seq_ctrl int
-    // (seq_count++ & 0x3FFF) increment sequence count and use bit mask to ensure that it does not overflow
+
     payload_t packet = {
-        .packet_id = htons(CCSDS_APID),
-        .seq_ctrl = htons((0x3 << 14) | (seq_count++ & 0x3FFF)),
-        .length = htons(sizeof(int32_t) - 1),
+        .application_process_identifier=htons(CCSDS_APID)
+        .sequence_flags=htons(0x3),
+        .packet_sequence_count=htons(seq_count++ & 0x3FFF),
+        .packet_data_length = htons(sizeof(int32_t) - 1),
         .cpu_temp = htonl(cpu_temp),
     };
+    
     ssize_t bytes_sent = send(client_fd, &packet, sizeof(packet), MSG_NOSIGNAL);
     if(bytes_sent != (ssize_t)sizeof(packet)){
         if(bytes_sent < 0){
