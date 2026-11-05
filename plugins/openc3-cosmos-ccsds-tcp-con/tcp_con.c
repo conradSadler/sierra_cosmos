@@ -113,6 +113,13 @@ int receive_commands(int client_fd){
         printf("%s","Disconnected");
         return -1;
     }
+    if(bytes_read < 6){
+        fprintf(stderr, "Short read: %zd bytes, need 6 for CCSDS header\n", bytes_read);
+        return 0;
+    }
+    uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
+    printf("Data Length: (data field is %u bytes)\n", data_length, data_length + 1u);
+
     printf("Received %zd bytes\n", bytes_read);
     return 0;
 }
