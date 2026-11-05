@@ -1,0 +1,10 @@
+COMMAND RPI4B FILE_MOD BIG_ENDIAN "Modify Central File"
+  # Keyword           Name              BitSize Type   Min Max   Default Description
+  APPEND_ID_PARAMETER CCSDS_VERSION     3       UINT   0   7     0       "Packet Version Number"
+  APPEND_PARAMETER    CCSDS_PACKET_TYPE 1       UINT   0   1     1       "Set to 0 if TLM and 1 if CMD"
+  APPEND_PARAMETER    CCSDS_SEC_HEADER  1       UINT   0   1     0       "Set to 0 if no secondary header"
+  APPEND_ID_PARAMETER CCSDS_APID        11      UINT   0   2047  1       "Application ID"
+  APPEND_PARAMETER    CCSDS_SEQ_FLAG    2       UINT   0   3     3       "Continuation of data (00), first segment (01), last segment (10), unsegmented (11)"
+  APPEND_PARAMETER    CCSDS_SEQ_NUM     14      UINT   0   16383 0       "Counts the total packets sent with this packet's APID"
+  APPEND_PARAMETER    PACKET_LENGTH     16      UINT   0   65535 0       "Packet total length - 1"
+  APPEND_PARAMETER    FILE_DATA         0       STRING           "NONE"  "The Text to insert into File"
