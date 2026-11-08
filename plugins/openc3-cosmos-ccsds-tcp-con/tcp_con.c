@@ -76,7 +76,6 @@ int send_telemetry(int client_fd){
         perror("Reading File Error");
         return -1;
     }
-    printf("%x", cpu_temp);
     // htons converts a short(2-byte) integer from local host order to network byte order
     // (0x3 << 14) shift 11 for unsegmented to the first 2 bits of seq_ctrl int
     // (seq_count++ & 0x3FFF) increment sequence count and use bit mask to ensure that it does not overflow

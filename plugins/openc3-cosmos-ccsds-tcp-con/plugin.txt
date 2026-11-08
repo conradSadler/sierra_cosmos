@@ -5,4 +5,4 @@ TARGET RPI4B RPI4B
 INTERFACE RPI4B tcpip_client_interface.rb 169.254.240.36 8080 8080 10.0 nil
   MAP_TARGET RPI4B
   PROTOCOL READ LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil nil True
-  PROTOCOL WRITE LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil 1016 True
+  PROTOCOL WRITE LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil nil True
