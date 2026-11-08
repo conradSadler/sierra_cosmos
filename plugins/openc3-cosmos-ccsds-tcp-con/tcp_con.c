@@ -109,13 +109,13 @@ int receive_commands(int client_fd){
     {
         total += count;
         uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
-        if(total == 6 + data_length + 1)
+        if(total == 6 + data_length)
         {
             printf("Received %d bytes\n", total);
             printf("Bytes: ");
-            for(int i = 0; i < total; i++)
+            for(int i = 6; i < total; i++)
             {
-                printf("%02x ", (unsigned int)((const uint8_t *)buffer[i])
+                printf("%02x ", (unsigned int)buffer[i]);
             }
             return 0;
         }
@@ -135,6 +135,10 @@ int receive_commands(int client_fd){
         // EOS on the socket: close it, exit the thread
         printf("%s","Disconnected");
         return -1;
+    }
+    else
+    {
+        return 0;
     }
 }
 
