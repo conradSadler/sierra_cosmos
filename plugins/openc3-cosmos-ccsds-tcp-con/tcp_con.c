@@ -99,9 +99,10 @@ int send_telemetry(int client_fd){
 }
 
 int receive_commands(int client_fd){
-    uint16_t buffer[BUFFER_SIZE];
-    int count = 0; 
-    int total = 0; // total bytes received
+    uint8_t buffer[BUFFER_SIZE];
+    int count = 0;
+    // total bytes received
+    int total = 0;
 
     while ((count = recv(client_fd, &buffer[total], BUFFER_SIZE - total, 0)) > 0)
     {
