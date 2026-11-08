@@ -94,6 +94,7 @@ int send_telemetry(int client_fd){
         else{
             fprintf(stderr, "Error sending bytes: short write\n");
         }
+        return -1;
     }
     return 0;
 }
@@ -110,8 +111,12 @@ int receive_commands(int client_fd){
         uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
         if(total == 6 + data_length + 1)
         {
-            printf("Received %zd bytes\n", total);
-            printf("Bytes: 0x" PRIu16 " ",buffer);
+            printf("Received %d bytes\n", total);
+            printf("Bytes: ");
+            for(int i = 0; i < total; i++)
+            {
+                printf("%02x ", (unsigned int)((const uint8_t *)buffer[i])
+            }
             return 0;
         }
         // At this point the buffer is valid from 0..total-1:
