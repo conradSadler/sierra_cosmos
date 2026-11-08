@@ -94,34 +94,42 @@ int send_telemetry(int client_fd){
         else{
             fprintf(stderr, "Error sending bytes: short write\n");
         }
-        return -1;
     }
     return 0;
 }
 
 int receive_commands(int client_fd){
-    uint8_t buffer[BUFFER_SIZE];
-    ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE-1, 0);
-    if(bytes_read < 0){
+    uint16_t buffer[BUFFER_SIZE];
+    int count = 0; 
+    int total = 0; // total bytes received
+
+    while ((count = recv(client_fd, &buffer[total], BUFFER_SIZE - total, 0)) > 0)
+    {
+        total += count;
+        uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
+        if(total == 6 + data_length + 1)
+        {
+            printf("Received %zd bytes\n", total);
+            printf("Bytes: 0x" PRIu16 " ",buffer);
+            return 0;
+        }
+        // At this point the buffer is valid from 0..total-1:
+        // if that's enough then process it and break, otherwise continue.
+    }
+
+    if(count < 0){
         if(errno == EAGAIN || errno == EWOULDBLOCK ){
             return 0;
         }
         perror("Read failed");
         return -1;
     }
-    else if (bytes_read == 0){
+    else if (count == 0)
+    {
+        // EOS on the socket: close it, exit the thread
         printf("%s","Disconnected");
         return -1;
     }
-    if(bytes_read < 6){
-        fprintf(stderr, "Short read: %zd bytes, need 6 for CCSDS header\n", bytes_read);
-        return 0;
-    }
-    uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
-    printf("Data Length: (data field is %u bytes)\n", data_length, data_length + 1u);
-
-    printf("Received %zd bytes\n", bytes_read);
-    return 0;
 }
 
 int main(){
