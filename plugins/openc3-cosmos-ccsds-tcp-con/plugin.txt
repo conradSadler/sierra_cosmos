@@ -1,0 +1,11 @@
+# set VARIABLEs here to allow variation in your plugin
+
+TARGET RPI4B RPI4B
+
+INTERFACE RPI4B_TLM tcpip_client_interface.rb 169.254.240.36 8080 8080 10.0 nil
+  MAP_TARGET RPI4B
+  PROTOCOL READ LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil nil True
+
+INTERFACE RPI4B_CMD tcpip_client_interface.rb 169.254.240.36 8081 8081 10.0 nil
+  MAP_TARGET RPI4B
+  PROTOCOL WRITE LengthProtocol 32 16 7 1 BIG_ENDIAN 0 nil nil True
