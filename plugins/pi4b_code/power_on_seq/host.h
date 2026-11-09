@@ -8,7 +8,7 @@
 #ifndef INC_HOST_H_
 #define INC_HOST_H_
 
-#include "message.h"
+// #include "message.h"
 // UPDATE AFTER CONRAD MERGE
 #include "tcp_con.h"
 

@@ -6,6 +6,8 @@
  *     Author: Alan
 */
 
+// Might be worth adding a message.c, otherwise check in tcp_con.h/tcp_con.c
+
 #ifndef INC_MESSAGE_H_
 #define INC_MESSAGE_H_
 
@@ -42,7 +44,8 @@
   */
 typedef enum
 {
-  MESSAGE_ID_DEFAULT                            = 0U,
+  MESSAGE_ID_DEFAULT                            = -1U,
+  MESSAGE_ID_RESERVED                           = 0U,
   MESSAGE_ID_POWER_ON                           = 1U,
   MESSAGE_ID_ID_EXCHANCE                        = 2U,
   MESSAGE_ID_TIME                               = 3U,
@@ -63,12 +66,17 @@ typedef enum
   */
 
 typedef struct __attribute__((packed)){
-  // APID length is not long enough 11 bits compared to 16 bits
   uint16_t packet_identification;             // First two octets of the primary header
   uint16_t packet_sequence_control;           // Second two octets of the primary header
   uint16_t packet_data_length;                // Last two octets of the primary header
 } message_header_t;
 
+
+typedef struct __attribute__((packed)){
+  message_header_t header;
+  // Message_IDTypeDef type;
+  void *data; // This might cause issues down the road due to being too generic
+} payload_t;
 /* 
   Commented out since functions should not be the way we go because 
     each function will have to interact with a message struct that has changing
@@ -178,7 +186,7 @@ typedef struct __attribute((packed)){
   uint16_t enclosure_state;
   uint64_t payload_state;
   uint64_t error_code;
-} telemerty_update_message_t;
+} telemetry_update_message_t;
 
 typedef struct __attribute((packed)){
   uint64_t time_remaining;
