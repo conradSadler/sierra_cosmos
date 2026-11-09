@@ -1,6 +1,8 @@
 #include "tcp_con.h"
+extern char **environ;
 
-static struct sockaddr_in server_addr;
+static struct sockaddr_in server_addr_tlm;
+static struct sockaddr_in server_addr_cmd;
 static struct sockaddr_in client_addr;
 int seq_count = 0;
 
@@ -9,60 +11,101 @@ int seq_count = 0;
     Returns -1 if failure came up
 */
 int init_con(
-    int *server_fd, 
-    int *client_fd,
-    uint16_t port){
+    int *server_fd_tlm, 
+    int *server_fd_cmd, 
+    int *client_fd_tlm,
+    int *client_fd_cmd,
+    uint16_t port_1,
+    uint16_t port_2){
 
     socklen_t addr_len = sizeof(client_addr);
     int opt = 1;
     
     // Create a socket
-    if((*server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+    if((*server_fd_tlm = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("Socket creation failed");
         return -1;
     }
-    if(setsockopt(*server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
+    if(setsockopt(*server_fd_tlm, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
         perror("setsockopt failed");
-        close(*server_fd);
+        close(*server_fd_tlm);
         return -1;
     }
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(port);
 
-    // Bounding to a local address with bind
-    if (bind(*server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
+    // Create a socket
+    if((*server_fd_cmd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        perror("Socket creation failed");
+        return -1;
+    }
+    if(setsockopt(*server_fd_cmd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
+        perror("setsockopt failed");
+        close(*server_fd_cmd);
+        return -1;
+    }
+
+    server_addr_tlm.sin_family = AF_INET;
+    server_addr_cmd.sin_family = AF_INET;
+    server_addr_tlm.sin_addr.s_addr = INADDR_ANY;
+    server_addr_cmd.sin_addr.s_addr = INADDR_ANY;
+    server_addr_tlm.sin_port = htons(port_1);
+    server_addr_cmd.sin_port = htons(port_2);
+
+    // Binding to a local address
+    if (bind(*server_fd_tlm, (struct sockaddr*)&server_addr_tlm, sizeof(server_addr_tlm)) < 0){
         perror("Bind failed");
-        close(*server_fd);
+        close(*server_fd_tlm);
         return -1;
     }
 
-    // Listen with queue limit
-    // https://man7.org/linux/man-pages/man2/listen.2.html
-    if (listen(*server_fd, 3) < 0){
-        perror("Listen failed");
-        close(*server_fd);
+    // Binding to a local address
+    if (bind(*server_fd_cmd, (struct sockaddr*)&server_addr_cmd, sizeof(server_addr_cmd)) < 0){
+        perror("Bind failed");
+        close(*server_fd_cmd);
         return -1;
     }
-    printf("Server listening on %d...\n", port);
+
+    // Listen with queue limit of 3
+    // https://man7.org/linux/man-pages/man2/listen.2.html
+    if (listen(*server_fd_tlm, 3) < 0){
+        perror("Listen failed");
+        close(*server_fd_tlm);
+        return -1;
+    }
+    if (listen(*server_fd_cmd, 3) < 0){
+        perror("Listen failed");
+        close(*server_fd_cmd);
+        return -1;
+    }
+    printf("Server listening on %d...\n", port_1);
+    printf("Server listening on %d...\n", port_2);
+
 
     // accept() blocks until a client connects
-    if((*client_fd = accept(*server_fd, (struct sockaddr*)&client_addr, &addr_len)) < 0){
+    if((*client_fd_tlm = accept(*server_fd_tlm, (struct sockaddr*)&client_addr, &addr_len)) < 0){
         perror("Accept failed");
-        close(*server_fd);
+        close(*server_fd_tlm);
         return -1;
     }
-    int flags = fcntl(*client_fd, F_GETFL, 0);
+    // accept() blocks until a client connects
+    if((*client_fd_cmd = accept(*server_fd_cmd, (struct sockaddr*)&client_addr, &addr_len)) < 0){
+        perror("Accept failed");
+        close(*server_fd_cmd);
+        return -1;
+    }
+    int flags_tlm = fcntl(*client_fd_tlm, F_GETFL, 0);
+    int flags_cmd = fcntl(*client_fd_tlm, F_GETFL, 0);
     // Open client connection with file control to 
     // Use a bitwise or to add the O_NONBLOCK flag to the sockets current flags
-    fcntl(*client_fd, F_SETFL, flags | O_NONBLOCK);
+    fcntl(*client_fd_tlm, F_SETFL, flags_tlm | O_NONBLOCK);
+    fcntl(*client_fd_cmd, F_SETFL, flags_cmd | O_NONBLOCK);
 
     // ntohs - converts the unsigned integer netlong from network byte order to host byte order.
-    printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    //printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    //printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     return 0;
 }
 
-int send_telemetry(int client_fd){
+int send_telemetry(int client_fd_tlm){
     uint32_t cpu_temp;
     
     FILE *fp = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
@@ -85,41 +128,75 @@ int send_telemetry(int client_fd){
         .length = htons(sizeof(int32_t) - 1),
         .cpu_temp = htonl(cpu_temp),
     };
-    ssize_t bytes_sent = send(client_fd, &packet, sizeof(packet), MSG_NOSIGNAL);
-    if(bytes_sent != (ssize_t)sizeof(packet)){
-        if(bytes_sent < 0){
-            perror("Error sending bytes!");
+    ssize_t sent_total = 0;
+    ssize_t packet_size=sizeof(packet);
+    while ( sent_total < packet_size )
+    {
+        ssize_t bytes_sent = send(client_fd_tlm, &packet, sizeof(packet), MSG_NOSIGNAL);
+        sent_total+=bytes_sent;
+
+        
+        if(bytes_sent != (ssize_t)sizeof(packet)){
+            if(bytes_sent < 0){
+                perror("Error sending bytes!");
+            }
+            else{
+                fprintf(stderr, "Error sending bytes: short write\n");
+            }
         }
-        else{
-            fprintf(stderr, "Error sending bytes: short write\n");
-        }
-        return -1;
     }
     return 0;
 }
 
-int receive_commands(int client_fd){
+int receive_commands(int client_fd_cmd){
+    // buffer is 8 bit integers to keep reading packet payload simple
+    // This causes packet headers feilds to be split
+    // buffer[0] -> [ version (3 bits), type (1 bit), Secondary header (1 bit), APID (first 3 bits most significant bits) ]
+    // buffer[1] -> [ APID (last 8 bits) ]
+    // buffer[2] -> [ Sequence flag (2 bits), Sequence count (first 6 most significant bits)]
+    // buffer[3] -> [ Sequence count (last 8 bits) ]
+    // buffer[4] -> [ length (first 8 most significant bits) ]
+    // buffer[5] -> [ length (last 8 bits)]
     uint8_t buffer[BUFFER_SIZE];
     int count = 0;
     // total bytes received
     int total = 0;
+    // File pointer
+    FILE *fptr;
 
-    while ((count = recv(client_fd, &buffer[total], BUFFER_SIZE - total, 0)) > 0)
+    // While there are bytes from the client, continue to read them into buffer.
+    // If the client disconnects or a read fails exit the loop and handle below
+    while ((count = recv(client_fd_cmd, &buffer[total], BUFFER_SIZE - total, 0)) > 0)
     {
-        total += count;
-        uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
-        if(total == 6 + data_length)
+        // While buffer does not have the whole 6 byte packet header, continue reading and skip the information below
+        if (total < 6) 
         {
-            printf("Received %d bytes\n", total);
-            printf("Bytes: ");
+             continue;
+        }
+
+        // Reconstruct the length field from the packet header
+        uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
+        printf("Data Lenght: %d\n",data_length);
+        // flag.txt wil be created if it does not already exist
+        // If flag.txt already exists, then the file will be wipped clean before adding the next flag
+        fptr = fopen("flag.txt", "w");
+        char null_byte='\0';
+        // If a whole packet is received then proccess it
+        if(total >= 6 + data_length)
+        {
             for(int i = 6; i < total; i++)
             {
-                printf("%02x ", (unsigned int)buffer[i]);
+                fprintf(fptr,"%c",(char)buffer[i]); // Add a character every iteration
             }
+            fprintf(fptr,"%c",null_byte); // Add the null byte at the end becasue fprintf does not do that
+            fclose(fptr);
+            printf("\n");
             return 0;
         }
-        // At this point the buffer is valid from 0..total-1:
-        // if that's enough then process it and break, otherwise continue.
+        else
+        {
+            printf("Packet lenght is: %d, not the expected length of: %d\n", total, 6 + data_length);
+        }
     }
 
     if(count < 0){
@@ -143,20 +220,22 @@ int receive_commands(int client_fd){
 
 int main(){
     // File Descriptors
-    int server_fd, client_fd;
+    int server_fd_tlm, server_fd_cmd, client_fd_tlm, client_fd_cmd;
 
-    if(init_con(&server_fd, &client_fd, PORT) == -1){
+    if(init_con(&server_fd_tlm,&server_fd_cmd, &client_fd_tlm,&client_fd_cmd, PORT,8081)  == -1){
         printf("init_con error");
         exit(EXIT_FAILURE);
     }
 
+
     while(1){
-        if(send_telemetry(client_fd)==-1) break;
-        if(receive_commands(client_fd)==-1) break;
-        sleep(2);
+        if(send_telemetry(client_fd_tlm)==-1) break;
+        if(receive_commands(client_fd_cmd)==-1) break;
     }
 
-    close(client_fd);
-    close(server_fd);
+    close(client_fd_tlm);
+    close(client_fd_cmd);
+    close(server_fd_tlm);
+    close(server_fd_cmd);
     return 0;
 }

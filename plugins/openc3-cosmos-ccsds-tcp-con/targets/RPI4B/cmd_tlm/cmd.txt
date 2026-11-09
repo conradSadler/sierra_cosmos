@@ -7,4 +7,5 @@ COMMAND RPI4B FILE_MOD BIG_ENDIAN "Modify Central File"
   APPEND_PARAMETER    CCSDS_SEQ_FLAG    2       UINT   0   3     3       "Continuation of data (00), first segment (01), last segment (10), unsegmented (11)"
   APPEND_PARAMETER    CCSDS_SEQ_NUM     14      UINT   0   16383 0       "Counts the total packets sent with this packet's APID"
   APPEND_PARAMETER    PACKET_LENGTH     16      UINT   0   65535 0       "Packet total length - 1"
+  HIDDEN
   APPEND_PARAMETER    FILE_DATA         0       STRING           "NONE"  "The Text to insert into File"
