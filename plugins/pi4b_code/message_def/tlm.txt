@@ -1,0 +1,20 @@
+TELEMETRY RPI4B TESTTEMP BIG_ENDIAN "Raspberry Pi Testing Temperature"
+  # Keyword      Name           BitSize Type ID Description
+  APPEND_ITEM    CCSDS_VERSION     3    UINT    "Packet version number"
+  APPEND_ITEM    CCSDS_TYPE        1    UINT    "Set to 0 if TLM and 1 if CMD"
+  APPEND_ITEM    CCSDS_SEC_HEADER  1    UINT    "Set to 0 if no secondary header"
+  APPEND_ID_ITEM CCSDS_APID       11    UINT 0  "Application ID"
+  APPEND_ITEM    CCSDS_SEQ_FLAGS   2    UINT    "00 cont, 01 first segment, 10 last segment, 11 unsegmented segment"
+  APPEND_ITEM    CCSDS_SEQCNT     14    UINT    "Counts the total packets send with this packets APID"
+  APPEND_ITEM    CCSDS_LENGTH     16    UINT    "Records the byte length of the data field - 1"
+  APPEND_ITEM    TEMP_mC          32    INT     "CPU Temp"
+
+  TELEMETRY RPI4B SVTELEMETRY BIG_ENDIAN "Raspberry Pi Telemetry to Ground"
+  # Keyword      Name           BitSize Type ID Description
+  APPEND_ITEM    CCSDS_VERSION     3    UINT    "Packet version number"
+  APPEND_ITEM    CCSDS_TYPE        1    UINT    "Set to 0 if TLM and 1 if CMD"
+  APPEND_ITEM    CCSDS_SEC_HEADER  1    UINT    "Set to 0 if no secondary header"
+  APPEND_ID_ITEM CCSDS_APID       11    UINT 0  "Application ID"
+  APPEND_ITEM    CCSDS_SEQ_FLAGS   2    UINT    "00 cont, 01 first segment, 10 last segment, 11 unsegmented segment"
+  APPEND_ITEM    CCSDS_SEQCNT     14    UINT    "Counts the total packets send with this packets APID"
+  APPEND_ITEM    CCSDS_LENGTH     16    UINT    "Records the byte length of the data field - 1"
