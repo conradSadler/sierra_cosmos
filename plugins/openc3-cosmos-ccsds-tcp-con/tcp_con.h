@@ -15,7 +15,7 @@
 #define BUFFER_SIZE 1024
 #define RPI4B_ID 1
 
-int init_con(int *server_fd, int *client_fd, uint16_t port);
+int init_con(int *server_fd_tlm, int *server_fd_cmd, int *client_fd_tlm, int *client_fd_cmd,uint16_t port_1,uint16_t port_2);
 
 int send_telemetry(int client_fd);
 int receive_commands(int client_fd);

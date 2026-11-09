@@ -71,11 +71,13 @@ int init_con(
         close(*server_fd_tlm);
         return -1;
     }
+
     if (listen(*server_fd_cmd, 3) < 0){
         perror("Listen failed");
         close(*server_fd_cmd);
         return -1;
     }
+
     printf("Server listening on %d...\n", port_1);
     printf("Server listening on %d...\n", port_2);
 
@@ -93,7 +95,7 @@ int init_con(
         return -1;
     }
     int flags_tlm = fcntl(*client_fd_tlm, F_GETFL, 0);
-    int flags_cmd = fcntl(*client_fd_tlm, F_GETFL, 0);
+    int flags_cmd = fcntl(*client_fd_cmd, F_GETFL, 0);
     // Open client connection with file control to 
     // Use a bitwise or to add the O_NONBLOCK flag to the sockets current flags
     fcntl(*client_fd_tlm, F_SETFL, flags_tlm | O_NONBLOCK);
@@ -132,18 +134,28 @@ int send_telemetry(int client_fd_tlm){
     ssize_t packet_size=sizeof(packet);
     while ( sent_total < packet_size )
     {
-        ssize_t bytes_sent = send(client_fd_tlm, &packet, sizeof(packet), MSG_NOSIGNAL);
+        ssize_t bytes_sent = send(client_fd_tlm,((uint8_t *)&packet) + sent_total,packet_size - sent_total, MSG_NOSIGNAL);
         sent_total+=bytes_sent;
-
-        
-        if(bytes_sent != (ssize_t)sizeof(packet)){
-            if(bytes_sent < 0){
+        if (bytes_sent < 0)
+        {   
+            // TCP connection was full so try again
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
                 perror("Error sending bytes!");
             }
-            else{
-                fprintf(stderr, "Error sending bytes: short write\n");
-            }
+
         }
+        if (bytes_sent == 0)
+        {
+            fprintf(stderr, "Error sending bytes: connection closed\n");
+            return -1;
+        }
+        sent_total += bytes_sent;
+        
     }
     return 0;
 }
@@ -168,29 +180,33 @@ int receive_commands(int client_fd_cmd){
     // If the client disconnects or a read fails exit the loop and handle below
     while ((count = recv(client_fd_cmd, &buffer[total], BUFFER_SIZE - total, 0)) > 0)
     {
+        total += count;
         // While buffer does not have the whole 6 byte packet header, continue reading and skip the information below
         if (total < 6) 
         {
              continue;
         }
-
         // Reconstruct the length field from the packet header
         uint16_t data_length = ((uint16_t) buffer[4] << 8) | buffer[5];
-        printf("Data Lenght: %d\n",data_length);
-        // flag.txt wil be created if it does not already exist
-        // If flag.txt already exists, then the file will be wipped clean before adding the next flag
-        fptr = fopen("flag.txt", "w");
-        char null_byte='\0';
         // If a whole packet is received then proccess it
         if(total >= 6 + data_length)
         {
+            // flag.txt wil be created if it does not already exist
+            // If flag.txt already exists, then the file will be emptied before adding the next flag
+            fptr = fopen("flag.txt", "w");
+            if (fptr == NULL)
+            {
+                printf("Error: flag.txt was not able to be opened.");
+                return -1;
+            }
+            char null_byte='\0';
+
             for(int i = 6; i < total; i++)
             {
                 fprintf(fptr,"%c",(char)buffer[i]); // Add a character every iteration
             }
             fprintf(fptr,"%c",null_byte); // Add the null byte at the end becasue fprintf does not do that
             fclose(fptr);
-            printf("\n");
             return 0;
         }
         else
@@ -231,6 +247,7 @@ int main(){
     while(1){
         if(send_telemetry(client_fd_tlm)==-1) break;
         if(receive_commands(client_fd_cmd)==-1) break;
+        sleep(.01);
     }
 
     close(client_fd_tlm);
