@@ -71,6 +71,10 @@ typedef struct __attribute__((packed)){
   uint16_t packet_data_length;                // Last two octets of the primary header
 } message_header_t;
 
+typedef struct __attribute__((packed)){
+  message_header_t header;
+  uint32_t data;
+} openc3_payload_t;
 
 typedef struct __attribute__((packed)){
   message_header_t header;

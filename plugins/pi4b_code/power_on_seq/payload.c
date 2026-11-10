@@ -43,7 +43,7 @@ int main(){
     while(1){
         // if(send_telemetry(host_client_fd)==-1) break;
         if(payload_receive_message(host_fd)==-1) break;
-        sleep(2);
+        // sleep(2);
     }
 
     // close(rack_server_fd);

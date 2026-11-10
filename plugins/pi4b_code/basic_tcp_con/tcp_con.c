@@ -2,7 +2,7 @@
 
 // static struct sockaddr_in server_addr;
 // static struct sockaddr_in client_addr;
-uint16_t seq_count = 0;
+// uint16_t seq_count = 0;
 
 /*
     Returns 0 if successful
@@ -68,7 +68,7 @@ int32_t init_con(
 */
 int32_t payload_receive_message(int32_t client_fd){
     payload_t payload;
-    ssize_t bytes_read = recv(client_fd, &payload, sizeof(payload_t)-1, 0);
+    ssize_t bytes_read = recv(client_fd, &payload, sizeof(payload_t), 0);
     if(bytes_read < 0){
         if(errno == EAGAIN || errno == EWOULDBLOCK ){
             return 0;
@@ -82,11 +82,11 @@ int32_t payload_receive_message(int32_t client_fd){
     }
     printf("Received %zd bytes\n", bytes_read);
     printf("%x\n", payload);
-    printf("%x\n", (payload.header.packet_identification));
-    printf("%x\n", (payload.header.packet_sequence_control));
-    printf("%x\n", (payload.header.packet_data_length));
-    printf("%x\n", (payload.data));
-    switch (payload.header.packet_identification & APID_BIT_MASK){
+    printf("%x\n", ntohs(payload.header.packet_identification));
+    printf("%x\n", ntohs(payload.header.packet_sequence_control));
+    printf("%x\n", ntohs(payload.header.packet_data_length));
+    // printf("%x\n", ntohl(payload.data));
+    switch (ntohs(payload.header.packet_identification) & APID_BIT_MASK){
         case MESSAGE_ID_POWER_ON:
             // Nothing to do as no need to typecast
             printf("In message: power_on\n");
@@ -163,39 +163,29 @@ int32_t host_receive_message(int32_t client_fd){
     return 0;
 }
 
-int32_t host_send_message(int32_t client_fd, uint16_t message_id){
-    uint32_t data_length = 0;
-    // payload_t payload = {
-    //     .header.packet_identification = htons(FIRST_TWO_OCTET(6, 1, 0, 1)),
-    //     .header.packet_sequence_control = htons(SECOND_TWO_OCTET(message_id, seq_count++)),
-    //     .header.packet_data_length = htons(data_length),
-    //     .data = (void*)htonl(0x21)
-    // };
+int32_t host_send_message(int32_t client_fd, uint16_t *seq_count, uint16_t message_id){
+    uint32_t data_length = 1;
     payload_t payload = {
-        .header.packet_identification = FIRST_TWO_OCTET(6, 1, 0, 1),
-        .header.packet_sequence_control = SECOND_TWO_OCTET(message_id, seq_count++),
-        .header.packet_data_length = data_length,
-        .data = (void*)0x21
+        .header.packet_identification = htons(FIRST_TWO_OCTET(6, 1, 0, 1)),
+        .header.packet_sequence_control = htons(SECOND_TWO_OCTET(message_id, (*seq_count)++)),
+        .header.packet_data_length = htons(data_length),
+        .data = (void*)htonl(0x21)
     };
-    printf("%x\n", payload);
-    printf("%x\n", (payload.header.packet_identification));
-    printf("%x\n", (payload.header.packet_sequence_control));
-    printf("%x\n", (payload.header.packet_data_length));
-    printf("%x\n", (payload.data));
     ssize_t bytes_sent = send(client_fd, &payload, sizeof(payload), MSG_NOSIGNAL);
     if(bytes_sent != (ssize_t)sizeof(payload)){
         if(bytes_sent < 0){
-            perror("Error sending bytes!\n");
+            perror("host_send_message: Error sending bytes!\n");
         }
         else{
             fprintf(stderr, "Error sending bytes: short write\n");
         }
         return -1;
     }
+    
     return 0;
 }
 
-int32_t send_telemetry(int32_t client_fd){
+int32_t send_telemetry(int32_t client_fd, uint16_t *seq_count){
     uint32_t cpu_temp;
 
     FILE *fp = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
@@ -213,24 +203,25 @@ int32_t send_telemetry(int32_t client_fd){
     printf("cpu_temp: %x\n", cpu_temp);
 
 
-    payload_t packet = {
+    openc3_payload_t packet = {
         .header.packet_identification = htons(FIRST_TWO_OCTET(6, 1, 0, 1)),
-        .header.packet_sequence_control = htons(SECOND_TWO_OCTET(1, seq_count++)),
+        .header.packet_sequence_control = htons(SECOND_TWO_OCTET(1, (*seq_count)++)),
         .header.packet_data_length = htons(sizeof(int32_t)-1),
-        .data = (void*)htonl(cpu_temp)
+        .data = htonl(cpu_temp)
     };
     // //printf("size: %zu, %b\n", sizeof(packet), packet);
-    // printf("size: %zu, hdr: %04x %04x %04x %08x\n", sizeof(packet),
+    printf("size: %zu, hdr: %04x %04x %04x %08x\n", sizeof(packet),
     // //printf("size: %zu, hdr: %16b %16b %16b %04x\n", sizeof(packet),
-    //    ntohs(packet.header.packet_identification), ntohs(packet.header.packet_sequence_control),
-    //    ntohs(packet.header.packet_data_length), ntohl((uint32_t)packet.data));
+       ntohs(packet.header.packet_identification), ntohs(packet.header.packet_sequence_control),
+       ntohs(packet.header.packet_data_length), ntohl(packet.data));
     ssize_t bytes_sent = send(client_fd, &packet, sizeof(packet), MSG_NOSIGNAL);
     if(bytes_sent != (ssize_t)sizeof(packet)){
         if(bytes_sent < 0){
-            perror("Error sending bytes!\n");
+            perror("send_telemetry: Error sending bytes!\n");
         }
         else{
-            fprintf(stderr, "Error sending bytes: short write\n");
+            // fprintf(stderr, "Error sending bytes: short write\n");
+            perror("Error sending bytes: short write\n");
         }
         return -1;
     }
@@ -239,7 +230,7 @@ int32_t send_telemetry(int32_t client_fd){
 
 int32_t receive_commands(int32_t client_fd){
     uint8_t buffer[BUFFER_SIZE];
-    ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE-1, 0);
+    ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
     if(bytes_read < 0){
         if(errno == EAGAIN || errno == EWOULDBLOCK ){
             return 0;

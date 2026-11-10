@@ -20,7 +20,7 @@ int32_t init_con(int32_t *server_fd, int32_t *client_fd,
 
 int32_t payload_receive_message(int32_t client_fd);
 int32_t host_receive_message(int32_t client_fd);
-int32_t host_send_message(int32_t client_fd, uint16_t message_id);
+int32_t host_send_message(int32_t client_fd, uint16_t *seq_count, uint16_t message_id);
 
-int32_t send_telemetry(int32_t client_fd);
+int32_t send_telemetry(int32_t client_fd, uint16_t *seq_count);
 int32_t receive_commands(int32_t client_fd);
