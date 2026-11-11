@@ -4,6 +4,28 @@ See the [OpenC3](https://openc3.com) documentation for all things OpenC3.
 
 Update this comment with your own description.
 
+## TCP server tests
+
+From this plugin directory, run:
+
+```sh
+bash tests/run.sh
+bash tests/run.sh --coverage
+```
+
+The tests use the bundled `doctest.h`, Clang, and a C++11 compiler. Coverage
+additionally needs `llvm-profdata` and `llvm-cov` (found through `xcrun` on
+macOS). The report measures only `tcp_con.c`, including `main`, and writes
+an annotated HTML report to `tests/coverage/index.html`.
+
+`tcp_con.c` is compiled as C with a test-only header substituting socket,
+temperature-file, and sleep calls. No Raspberry Pi, network access, server,
+or external test dependency is needed. Real temporary files exercise parsing
+and command output without changing `flag.txt`. Tests cover setup failures,
+packet bytes, partial sends, interrupted sends, fragmented reads, error returns,
+and server-loop cleanup. Additional arguments are passed to doctest, for example
+`bash tests/run.sh --test-case='*telemetry*'`.
+
 ## Getting Started
 
 1. Edit the .gemspec file fields: name, summary, description, authors, email, and homepage
