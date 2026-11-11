@@ -52,15 +52,14 @@
 # that is needed - no entry in this file is required. See .env for details.
 # ---------------------------------------------------------------------------
 
-# services:
+services:
 #   # -----------------------------------------------------------------------
 #   # Command / Telemetry API
 #   # -----------------------------------------------------------------------
-#   openc3-cosmos-cmd-tlm-api:
-#     environment:
-#       # Number of Puma workers (processes). compose.yaml ships a default;
-#       # set this to roughly the number of CPU cores you want the API to use.
-#       - WEB_CONCURRENCY=16
+  openc3-cosmos-cmd-tlm-api:
+    environment:
+      # Number of Puma workers (processes).
+      - WEB_CONCURRENCY=22
 #       # Enable a default queue for ALL commands. Commands can only opt out by
 #       # specifying a specific queue with the 'queue' parameter.
 #       # Need here as well as in openc3-cosmos-init because init creates the queue

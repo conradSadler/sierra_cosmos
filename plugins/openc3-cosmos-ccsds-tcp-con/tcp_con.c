@@ -135,17 +135,18 @@ int send_telemetry(int client_fd_tlm){
     while ( sent_total < packet_size )
     {
         ssize_t bytes_sent = send(client_fd_tlm,((uint8_t *)&packet) + sent_total,packet_size - sent_total, MSG_NOSIGNAL);
-        sent_total+=bytes_sent;
         if (bytes_sent < 0)
         {   
             // TCP connection was full so try again
-            if (errno == EINTR)
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
             {
+                // Skip the remaining loop if the TCP connection is full/busy
                 continue;
             }
             else
             {
                 perror("Error sending bytes!");
+                return -1;
             }
 
         }
