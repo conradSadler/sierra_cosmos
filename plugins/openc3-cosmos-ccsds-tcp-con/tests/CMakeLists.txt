@@ -1,5 +1,5 @@
 #-----------------------------------------Default from Tutorial--------------------------------------------------------
-make_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.24)
 project(tcp_con_tests LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)

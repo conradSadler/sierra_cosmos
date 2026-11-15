@@ -19,6 +19,8 @@ int init_con(
     uint16_t port_2){
 
     socklen_t addr_len = sizeof(client_addr);
+    // Enables SO_REUSEADDR option by passing non-zero value
+    // https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
     int opt = 1;
     
     // Create a socket

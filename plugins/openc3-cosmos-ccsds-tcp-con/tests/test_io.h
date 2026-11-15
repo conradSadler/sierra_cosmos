@@ -15,6 +15,7 @@ int test_setsockopt(int fd, int level, int option, const void *value, socklen_t 
 int test_bind(int fd, const struct sockaddr *address, socklen_t size);
 int test_listen(int fd, int backlog);
 int test_accept(int fd, struct sockaddr *address, socklen_t *size);
+int test_fclose(FILE *file);
 // Every fcntl call in tcp_con.c passes three arguments, but fcntl does not necessarily need three arguments
 int test_fcntl(int fd, int command, int flags);
 int test_close(int fd);
@@ -32,6 +33,7 @@ int tcp_server_main(void);
 #define bind test_bind
 #define listen test_listen
 #define accept test_accept
+#define fclose test_fclose
 #define fcntl test_fcntl
 #define close test_close
 #define fopen test_fopen
