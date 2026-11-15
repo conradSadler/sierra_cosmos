@@ -94,6 +94,8 @@ int init_con(
         close(*server_fd_cmd);
         return -1;
     }
+    // Get the current file descriptors flags. The third argument is unused, so convention calls for passing a 0
+    // Nice way to print out flags: "printf("FD MODE 2 - %#o\n", fcntl(sfd,F_GETFL));"
     int flags_tlm = fcntl(*client_fd_tlm, F_GETFL, 0);
     int flags_cmd = fcntl(*client_fd_cmd, F_GETFL, 0);
     // Open client connection with file control to 
