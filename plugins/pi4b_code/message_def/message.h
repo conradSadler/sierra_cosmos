@@ -11,10 +11,29 @@
 
 #include <stdint.h>
 
-#define   PACKET_VERSION_BIT_LENGTH 3
-#define   APID_BIT_LENGTH 11
-#define   SEQUENCE_FLAG_BIT_LENGTH 2
-#define   PACKET_SEQUENCE_COUNT_BIT_LENGTH 14
+#define PACKET_VERSION_BIT_MASK           0x7 
+#define APID_BIT_MASK                     0x7FF 
+#define SEQUENCE_FLAG_BIT_MASK            0x3
+#define PACKET_SEQUENCE_COUNT_BIT_MASK    0x3FFF
+#define PACKET_VERSION_BIT_OFFSET         13
+#define TYPE_BIT_OFFSET                   12 
+#define SECONDARY_HEADER_FLAG_BIT_OFFSET  11
+#define SEQUENCE_FLAG_BIT_OFFSET          14
+
+#define FIRST_TWO_OCTET(ver_num, type, sec, apid) \
+        ((uint16_t)((((ver_num) & PACKET_VERSION_BIT_MASK) << PACKET_VERSION_BIT_OFFSET) | \
+         (((type) & 1) << TYPE_BIT_OFFSET) | \
+         (((sec) & 1) << SECONDARY_HEADER_FLAG_BIT_OFFSET) | \
+         ((apid) & APID_BIT_MASK)))
+
+#define SECOND_TWO_OCTET(seq_flag, pack_count) \
+        ((uint16_t)((((seq_flag) & SEQUENCE_FLAG_BIT_MASK) << SEQUENCE_FLAG_BIT_OFFSET) | \
+         ((pack_count) & PACKET_SEQUENCE_COUNT_BIT_MASK)))
+
+// #define   PACKET_VERSION_BIT_LENGTH 3
+// #define   APID_BIT_LENGTH 11
+// #define   SEQUENCE_FLAG_BIT_LENGTH 2
+// #define   PACKET_SEQUENCE_COUNT_BIT_LENGTH 14
 
 #define   MAX_DATA_LENGTH 65536
 
@@ -44,19 +63,10 @@ typedef enum
   */
 
 typedef struct __attribute__((packed)){
-  // First two octets of the primary header
   // APID length is not long enough 11 bits compared to 16 bits
-  uint8_t packet_version:PACKET_VERSION_BIT_LENGTH;
-  uint8_t packet_type_flag:1;
-  uint8_t secondary_header_flag:1;
-  uint16_t application_process_identifier:APID_BIT_LENGTH; //Might change to message_idtype def
-
-  // Second two octets of the primary header
-  uint8_t sequence_flags:SEQUENCE_FLAG_BIT_LENGTH;
-  uint16_t packet_sequence_count:PACKET_SEQUENCE_COUNT_BIT_LENGTH;
-
-  // Last two octets of the primary header
-  uint16_t packet_data_length;
+  uint16_t packet_identification;             // First two octets of the primary header
+  uint16_t packet_sequence_control;           // Second two octets of the primary header
+  uint16_t packet_data_length;                // Last two octets of the primary header
 } message_header_t;
 
 /* 
