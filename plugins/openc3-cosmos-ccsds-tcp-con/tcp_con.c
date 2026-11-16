@@ -247,11 +247,10 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-
     while(1){
         if(send_telemetry(client_fd_tlm)==-1) break;
         if(receive_commands(client_fd_cmd)==-1) break;
-        sleep(.01);
+        sleep(1);
     }
 
     close(client_fd_tlm);

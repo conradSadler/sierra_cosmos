@@ -40,9 +40,33 @@ if(ENABLE_COVERAGE)
     if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang" OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         message(FATAL_ERROR "Coverage requires Clang for both C and C++")
     endif()
+    message("Building with Code Coverage Enabled")
     target_compile_options(tcp_con_under_test PRIVATE -O0 -g -fprofile-instr-generate -fcoverage-mapping)
     target_link_options(tcp_con_test PRIVATE -fprofile-instr-generate)
 endif()
+#set(PROFRAW_MAIN "main.profraw")
+#set(PROFRAW_TEST "tests.profraw")
+#set(PROFRAW_FILE "coverage.profraw")
+
+add_custom_target(run_test 
+    COMMAND LLVM_PROFILE_FILE="$PWD/tests/.build/coverage/tests.profraw" tests/.build/coverage/tcp_con_test
+    DEPENDS tcp_con_under_test tcp_con_test)
+add_custom_target(merge_coverage_data
+    COMMAND llvm-profdata merge -sparse tests/.build/coverage/tests.profraw -o tests/.build/coverage/tests.profdata
+    DEPENDS run_test
+)
+add_custom_target(generate_report
+    COMMAND llvm-cov report tests/.build/coverage/tcp_con_test -instr-profile=tests/.build/coverage/tests.profdata "$PWD/tcp_con.c"
+    DEPENDS merge_coverage_data
+)
+add_custom_target(show_report
+    COMMAND llvm-cov show tests/.build/coverage/tcp_con_test -instr-profile=tests/.build/coverage/tests.profdata -show-branches=count -format=html "$PWD/tcp_con.c" > tests/coverage/index.html
+    DEPENDS merge_coverage_data
+)
+
+add_dependencies()
+add_dependencies()
+add_dependencies()
 
 enable_testing()
 include(GoogleTest)
