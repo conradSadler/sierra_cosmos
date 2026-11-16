@@ -19,6 +19,8 @@ int init_con(
     uint16_t port_2){
 
     socklen_t addr_len = sizeof(client_addr);
+    // Enables SO_REUSEADDR option by passing non-zero value
+    // https://stackoverflow.com/questions/24194961/how-do-i-use-setsockoptso-reuseaddr
     int opt = 1;
     
     // Create a socket
@@ -94,6 +96,8 @@ int init_con(
         close(*server_fd_cmd);
         return -1;
     }
+    // Get the current file descriptors flags. The third argument is unused, so convention calls for passing a 0
+    // Nice way to print out flags: "printf("FD MODE 2 - %#o\n", fcntl(sfd,F_GETFL));"
     int flags_tlm = fcntl(*client_fd_tlm, F_GETFL, 0);
     int flags_cmd = fcntl(*client_fd_cmd, F_GETFL, 0);
     // Open client connection with file control to 
@@ -243,11 +247,10 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-
     while(1){
         if(send_telemetry(client_fd_tlm)==-1) break;
         if(receive_commands(client_fd_cmd)==-1) break;
-        sleep(.01);
+        sleep(1);
     }
 
     close(client_fd_tlm);
